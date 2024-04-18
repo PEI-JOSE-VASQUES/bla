@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enviar para Firebase</title>
+  <!-- Inclua a biblioteca do Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+  <button id="enviarParaFirebase">Enviar para Firebase</button>
+
+  <script>
+    // Configurações do seu projeto Firebase
+    const firebaseConfig = {
+            apiKey: "AIzaSyC6mPcUShe2Gty4o2ZoAXouzuGJ8m8U9lI",
+  authDomain: "jv-presente.firebaseapp.com",
+  databaseURL: "https://jv-presente-default-rtdb.firebaseio.com",
+  projectId: "jv-presente",
+  storageBucket: "jv-presente.appspot.com",
+  messagingSenderId: "565379728946",
+  appId: "1:565379728946:web:bda7f5491e13aaf09c9e2b",
+  measurementId: "G-XSY1F1J987"
+        };
+
+    // Inicialize o Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Referência para o nó 'ALUNOS-NA-ESCOLA' e 'ALUNOS-NO-SISTEMA' no Firebase Database
+    const alunosNaEscolaRef = firebase.database().ref('ALUNOS-NA-ESCOLA');
+    const alunosNoSistemaRef = firebase.database().ref('ALUNOS-NO-SISTEMA');
+    const historicoRef = firebase.database().ref('Historico');
+
+    // Função para enviar o valor para o Firebase
+    function enviarParaFirebase() {
+      const dataAtual = new Date().toISOString().split('T')[0]; // Obtém a data atual no formato 'YYYY-MM-DD'
+      console.log('Data atual:', dataAtual);
+      
+      // Buscar os nós dentro de 'ALUNOS-NO-SISTEMA'
+      alunosNoSistemaRef.once('value', (snapshot) => {
+        const alunosNoSistema = snapshot.val(); // Dados dos nós filhos de 'ALUNOS-NO-SISTEMA'
+        console.log('Dados de alunos no sistema:', alunosNoSistema);
+        
+        // Buscar os nós dentro de 'ALUNOS-NA-ESCOLA'
+        alunosNaEscolaRef.once('value', (snapshot) => {
+          const alunosNaEscola = snapshot.val(); // Dados dos nós filhos de 'ALUNOS-NA-ESCOLA'
+          console.log('Dados de alunos na escola:', alunosNaEscola);
+
+          // Verificar se os nós existem dentro de 'ALUNOS-NA-ESCOLA' e 'ALUNOS-NO-SISTEMA'
+          Object.keys(alunosNaEscola).forEach((key) => {
+            const alunoKey = 'A' + key;
+            if (alunosNoSistema.hasOwnProperty(alunoKey) && alunosNaEscola.hasOwnProperty(key)) {
+              const valorNomeAluno = alunosNoSistema[alunoKey].Nome;
+              const valorRAAluno = alunosNoSistema[alunoKey].RA;
+              console.log(`Valor do nome do aluno ${alunoKey}:`, valorNomeAluno);
+              console.log(`Valor do RA do aluno ${alunoKey}:`, valorRAAluno);
+              historicoRef.child(dataAtual).child(valorNomeAluno).set(valorRAAluno)
+                .then(() => {
+                  console.log(`Valor do RA do aluno ${alunoKey} (${valorRAAluno}) enviado para o nó 'Historico/${dataAtual}/${valorNomeAluno}' no Firebase com sucesso.`);
+                })
+                .catch((error) => {
+                  console.error(`Erro ao enviar valor do RA do aluno ${alunoKey} para o Firebase:`, error);
+                });
+            } else {
+              console.log(`Não há dados de aluno ${alunoKey} para a data ${dataAtual}.`);
+            }
+          });
+        });
+      });
+    }
+
+    // Adiciona um ouvinte de evento para o botão
+    document.getElementById('enviarParaFirebase').addEventListener('click', enviarParaFirebase);
+  </script>
+</body>
+</html>
